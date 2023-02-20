@@ -31,7 +31,8 @@ class Trainer:
                  criterion: nn.Module,
                  *,
                  test_loader: DataLoader = None,
-                 metric: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = None):
+                 metric: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = None,
+                 snapshot_path: str = None):
         self.local_rank = int(os.environ['LOCAL_RANK'])
         self.global_rank = int(os.environ['RANK'])
         self.train_loader = train_loader
@@ -42,7 +43,7 @@ class Trainer:
         self.model = model.to(self.local_rank)
 
         self.current_epoch = 0
-        self.snapshot_path = 'snapshot.pth'
+        self.snapshot_path = 'snapshot.pth' if snapshot_path else None
         if os.path.exists(self.snapshot_path):
             print(f'GPU {self.global_rank} | loading snapshot')
             self._load(self.snapshot_path)
@@ -138,6 +139,7 @@ class Trainer:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--epochs', type=int)
+    parser.add_argument('-p', '--pth', type=str)
     args = parser.parse_args()
 
     # initialize the process group
@@ -202,7 +204,8 @@ def main():
         optimizer=optimizer,
         criterion=criterion,
         test_loader=test_loader,
-        metric=Accuracy(task='multiclass', num_classes=len(train_data.classes)).to(local_rank)
+        metric=Accuracy(task='multiclass', num_classes=len(train_data.classes)).to(local_rank),
+        snapshot_path=args.pth
     )
 
     trainer.fit(args.epochs if args.epochs else 1)
