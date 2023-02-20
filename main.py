@@ -43,7 +43,7 @@ class Trainer:
         self.model = model.to(self.local_rank)
 
         self.current_epoch = 0
-        self.snapshot_path = 'snapshot.pth' if snapshot_path else None
+        self.snapshot_path = snapshot_path if snapshot_path else 'snapshot.pth'
         if os.path.exists(self.snapshot_path):
             print(f'GPU {self.global_rank} | loading snapshot')
             self._load(self.snapshot_path)
